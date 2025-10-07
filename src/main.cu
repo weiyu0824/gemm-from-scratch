@@ -3,11 +3,23 @@
 #include <cuda_runtime.h>
 #include "kernels/1_gemm_naive.cuh"
 
+// Macro
+#define CEIL_DIV(numerator, denominator) (((numerator) + (denominator) - 1) / (denominator))
+
 // Compute GFLOPS utility
 inline float compute_gflops(size_t M, size_t N, size_t K, float ms) {
     double flops = 2.0 * M * N * K;  // 2 ops per FMA
     return static_cast<float>(flops / (ms * 1e6));  // GFLOPS
 }
+
+void launch_gemm_naive(const float* A, const float* B, float* C, int M, int K, int N) {
+    dim3 threadsPerBlock(32, 32);
+    dim3 blocksPerGrid(CEIL_DIV(M, 32), CEIL_DIV(N, 32));
+    
+    gemm_naive_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+    cudaDeviceSynchronize();
+}
+
 
 int main() {
     std::vector<size_t> sizes = {128, 256, 512, 1024, 2048, 4096};

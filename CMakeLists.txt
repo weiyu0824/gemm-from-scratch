@@ -8,11 +8,10 @@ set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86)  # adjust based on your GPU
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Include source and kernel directories
-include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/src/kernels)
 
 add_executable(gemm_from_scratch
     src/main.cu
-    src/kernels/1_gemm_naive.cu
 )
 
 # Optimize CUDA build
