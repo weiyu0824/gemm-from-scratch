@@ -10,12 +10,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # Include source and kernel directories
 include_directories(${PROJECT_SOURCE_DIR}/src/kernels)
 
-add_executable(gemm_from_scratch
+add_executable(gemm_benchmark
     src/main.cu
 )
 
 # Optimize CUDA build
-set_target_properties(gemm_from_scratch PROPERTIES
+set_target_properties(gemm_benchmark PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
     CUDA_ARCHITECTURES "native"
 )
