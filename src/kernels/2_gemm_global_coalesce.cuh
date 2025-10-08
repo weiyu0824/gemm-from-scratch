@@ -12,7 +12,7 @@
 // 
 
 // A(M * K) * B(K * N) = C(M * N)
-__global__ void gemm_global_coalesce(float* A, float* B, float* C, size_t M, size_t N, size_t K){
+__global__ void gemm_global_coalesce_kernel(const float* A, const float* B, float* C, size_t M, size_t N, size_t K){
     size_t n = blockIdx.x * blockDim.x + threadIdx.x;
     size_t m = blockIdx.y * blockDim.y + threadIdx.y;
 

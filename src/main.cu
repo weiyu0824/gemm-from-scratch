@@ -24,18 +24,18 @@ void launch_gemm_naive(const float *A, const float *B, float *C, int M, int K, i
     cudaDeviceSynchronize();
 }
 
-void lauch_gemm_global_coalesce(const float *A, const float *B, float *C, int M, int K, int N)
+void launch_gemm_global_coalesce(const float *A, const float *B, float *C, int M, int K, int N)
 {
     dim3 threadsPerBlock(32, 32);
     dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
 
-    matrix_multiplication_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+    gemm_global_coalesce_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
     cudaDeviceSynchronize();
 }
 
 void print_benchmark_result(const char* kernel_name, size_t size, float time_ms, float gflops)
 {
-    printf("%-15s | Size: %-5zu | Time: %8.4f ms | GFLOPS: %8.4f\n",
+    printf("%-25s | Size: %-5zu | Time: %10.4f ms | GFLOPS: %8.4f\n",
            kernel_name, size, time_ms, gflops);
 }
 
@@ -44,7 +44,7 @@ int main()
     std::vector<size_t> sizes = {128, 256, 512, 1024, 2048, 4096};
 
     // stats
-    float time_ms, gfloaps;
+    float time_ms, gflops;
 
     for (auto s : sizes)
     {
@@ -79,7 +79,7 @@ int main()
 
         cudaEventElapsedTime(&time_ms, start, stop);
         gflops = compute_gflops(M, N, K, time_ms);
-        print_benchmark_result('NaiveGEMM', s, time_ms, gflops);
+        print_benchmark_result("NaiveGEMM", s, time_ms, gflops);
 
         // -- GEMM Global Coalesce --
         cudaEventRecord(start);
@@ -89,7 +89,7 @@ int main()
 
         cudaEventElapsedTime(&time_ms, start, stop);
         gflops = compute_gflops(M, N, K, time_ms);
-        print_benchmark_result('GlobalCoalesceGEMM', s, time_ms, gflops);
+        print_benchmark_result("GlobalCoalesceGEMM", s, time_ms, gflops);
 
 
         // Free data
