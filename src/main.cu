@@ -37,7 +37,7 @@ void launch_gemm_block_tilling(const float *A, const float *B, float *C, int M, 
 {
     dim3 threadsPerBlock(32, 32);
     dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
-    
+
     gemm_block_tiling_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
     cudaDeviceSynchronize();
 }
@@ -46,7 +46,7 @@ void launch_gemm_thread_tiling_1d(const float *A, const float *B, float *C, int 
 {
     dim3 threadsPerBlock(32, 32);
     dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
-    
+
     gemm_thread_tiling_1d_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
     cudaDeviceSynchronize();
 }
@@ -55,12 +55,12 @@ void launch_gemm_thread_tiling_2d(const float *A, const float *B, float *C, int 
 {
     dim3 threadsPerBlock(32, 32);
     dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
-    
+
     gemm_thread_tiling_2d_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
     cudaDeviceSynchronize();
 }
 
-void print_benchmark_result(const char* kernel_name, size_t size, float time_ms, float gflops)
+void print_benchmark_result(const char *kernel_name, size_t size, float time_ms, float gflops)
 {
     printf("%-25s | Size: %-5zu | Time: %10.4f ms | GFLOPS: %8.4f\n",
            kernel_name, size, time_ms, gflops);
@@ -78,7 +78,7 @@ int main()
         size_t M = s, N = s, K = s;
 
         float *A, *B, *C;
-        
+
         //
         cudaMallocManaged(&A, M * K * sizeof(float));
         cudaMallocManaged(&B, K * N * sizeof(float));
@@ -93,11 +93,10 @@ int main()
         launch_gemm_naive(A, B, C, M, N, K);
         cudaDeviceSynchronize();
 
-
         cudaEvent_t start, stop;
         cudaEventCreate(&start);
         cudaEventCreate(&stop);
-        
+
         // -- GEMM NAIVE --
         cudaEventRecord(start);
         launch_gemm_naive(A, B, C, M, N, K);
@@ -117,7 +116,6 @@ int main()
         cudaEventElapsedTime(&time_ms, start, stop);
         gflops = compute_gflops(M, N, K, time_ms);
         print_benchmark_result("GlobalCoalesceGEMM", s, time_ms, gflops);
-
 
         // Free data
         cudaFree(A);
