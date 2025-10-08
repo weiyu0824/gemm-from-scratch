@@ -33,6 +33,33 @@ void launch_gemm_global_coalesce(const float *A, const float *B, float *C, int M
     cudaDeviceSynchronize();
 }
 
+void launch_gemm_block_tilling(const float *A, const float *B, float *C, int M, int K, int N)
+{
+    dim3 threadsPerBlock(32, 32);
+    dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
+    
+    gemm_block_tiling_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+    cudaDeviceSynchronize();
+}
+
+void launch_gemm_thread_tiling_1d(const float *A, const float *B, float *C, int M, int K, int N)
+{
+    dim3 threadsPerBlock(32, 32);
+    dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
+    
+    gemm_thread_tiling_1d_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+    cudaDeviceSynchronize();
+}
+
+void launch_gemm_thread_tiling_2d(const float *A, const float *B, float *C, int M, int K, int N)
+{
+    dim3 threadsPerBlock(32, 32);
+    dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
+    
+    gemm_thread_tiling_2d_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+    cudaDeviceSynchronize();
+}
+
 void print_benchmark_result(const char* kernel_name, size_t size, float time_ms, float gflops)
 {
     printf("%-25s | Size: %-5zu | Time: %10.4f ms | GFLOPS: %8.4f\n",
