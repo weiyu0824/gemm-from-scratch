@@ -13,7 +13,7 @@ if [ ! -f "${BIN}" ]; then
 fi
 
 # Choose sizes to profile
-SIZES=(512 1024 2048, 4096)
+SIZES=(512 1024 2048 4096)
 
 echo "🔍 Running Nsight Compute profiling..."
 
