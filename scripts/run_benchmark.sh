@@ -5,5 +5,5 @@ cd "$ROOT_DIR"
 
 mkdir -p data/results
 echo "🚀 Running benchmarks..."
-./build/bin/gemm_benchmark | tee data/results/gemm_naive.log
-echo "✅ Results saved to data/results/gemm_naive.log"
+./build/bin/gemm_benchmark
+echo "✅ Completed !!"

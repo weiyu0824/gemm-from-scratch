@@ -33,53 +33,50 @@ void launch_gemm_global_coalesce(const float *A, const float *B, float *C, int M
     cudaDeviceSynchronize();
 }
 
-void launch_gemm_block_tilling(const float *A, const float *B, float *C, int M, int K, int N)
-{
-    dim3 threadsPerBlock(32, 32);
-    dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
-
-    gemm_block_tiling_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
-    cudaDeviceSynchronize();
-}
-
-void launch_gemm_thread_tiling_1d(const float *A, const float *B, float *C, int M, int K, int N)
-{
-    dim3 threadsPerBlock(32, 32);
-    dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
-
-    gemm_thread_tiling_1d_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
-    cudaDeviceSynchronize();
-}
-
-void launch_gemm_thread_tiling_2d(const float *A, const float *B, float *C, int M, int K, int N)
-{
-    dim3 threadsPerBlock(32, 32);
-    dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
-
-    gemm_thread_tiling_2d_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
-    cudaDeviceSynchronize();
-}
-
-void print_benchmark_result(const char *kernel_name, size_t size, float time_ms, float gflops)
+void print_benchmark_result(const char* kernel_name, size_t size, float time_ms, float gflops)
 {
     printf("%-25s | Size: %-5zu | Time: %10.4f ms | GFLOPS: %8.4f\n",
            kernel_name, size, time_ms, gflops);
 }
 
-int main()
+void warmup() {
+    size_t M = 256, N = 256, K = 256;
+    float *A, *B, *C;
+    cudaMallocManaged(&A, M * K * sizeof(float));
+    cudaMallocManaged(&B, K * N * sizeof(float));
+    cudaMallocManaged(&C, M * N * sizeof(float));
+    launch_gemm_naive(A, B, C, M, N, K);
+    cudaDeviceSynchronize();
+    cudaFree(A); cudaFree(B); cudaFree(C);
+}
+int main(int argc, char **argv)
 {
-    std::vector<size_t> sizes = {128, 256, 512, 1024, 2048, 4096};
+    std::vector<size_t> sizes;
+
+    if (argc > 1) {
+        // size from command-line args
+        for (int i = 1; i < argc; ++i) {
+            sizes.push_back(std::atoi(argv[i]));
+        }
+    } else {
+        // default sizes
+        sizes = {128, 256, 512, 1024, 2048, 4096};
+    }
+
+    warmup();
 
     // stats
     float time_ms, gflops;
+    
 
+    // benchmark
     for (auto s : sizes)
     {
         size_t M = s, N = s, K = s;
 
         float *A, *B, *C;
-
-        //
+        
+        // init data
         cudaMallocManaged(&A, M * K * sizeof(float));
         cudaMallocManaged(&B, K * N * sizeof(float));
         cudaMallocManaged(&C, M * N * sizeof(float));
@@ -88,15 +85,10 @@ int main()
             A[i] = 1.0f;
         for (size_t i = 0; i < K * N; i++)
             B[i] = 1.0f;
-
-        // Warm-up
-        launch_gemm_naive(A, B, C, M, N, K);
-        cudaDeviceSynchronize();
-
         cudaEvent_t start, stop;
         cudaEventCreate(&start);
         cudaEventCreate(&stop);
-
+        
         // -- GEMM NAIVE --
         cudaEventRecord(start);
         launch_gemm_naive(A, B, C, M, N, K);
@@ -125,6 +117,8 @@ int main()
         cudaEventDestroy(start);
         cudaEventDestroy(stop);
     }
+
+    
 
     return 0;
 }
