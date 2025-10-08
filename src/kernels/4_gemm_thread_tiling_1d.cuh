@@ -27,6 +27,8 @@ __global__ void gemm_thread_tiling_1d_kernel(const float *A, const float *B, flo
     __shared__ float tile_A[BLOCK_TILE_SIZE][BLOCK_TILE_SIZE];
     __shared__ float tile_B[BLOCK_TILE_SIZE][BLOCK_TILE_SIZE];
 
+    float val = 0;
+  
     for (int ti = 0; ti < CEIL_DIV(K, BLOCK_TILE_SIZE); ti++)
     {
         tile_A[tm][tn] = 0;

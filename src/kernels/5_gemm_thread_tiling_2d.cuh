@@ -23,29 +23,30 @@ __global__ void gemm_thread_tiling_2d_kernel(const float *A, const float *B, flo
     // inner tile index
     size_t tn = threadIdx.x;
     size_t tm = threadIdx.y;
+    float val = 0;
 
     __shared__ float tile_A[BLOCK_TILE][THREAD_TILE_H];
     __shared__ float tile_B[THREAD_TILE_H][BLOCK_TILE];
 
-    for (int ti = 0; ti < CEIL_DIV(K, ); ti++)
+    for (int ti = 0; ti < CEIL_DIV(K, BLOCK_TILE); ti++)
     {
         tile_A[tm][tn] = 0;
         tile_B[tm][tn] = 0;
 
-        if (m < M && ti * BLOCK_TILE_SIZE + tn < K)
+        if (m < M && ti * BLOCK_TILE + tn < K)
         {
-            tile_A[tm][tn] = A[INDEX_2D(m, (ti * BLOCK_TILE_SIZE + tn), K)];
+            tile_A[tm][tn] = A[INDEX_2D(m, (ti * BLOCK_TILE + tn), K)];
         }
 
-        if (ti * BLOCK_TILE_SIZE + tm < K && n < N)
+        if (ti * BLOCK_TILE + tm < K && n < N)
         {
-            tile_B[tm][tn] = B[INDEX_2D((ti * BLOCK_TILE_SIZE + tm), n, N)];
+            tile_B[tm][tn] = B[INDEX_2D((ti * BLOCK_TILE + tm), n, N)];
         }
 
         __syncthreads();
 
         // inner product inside tile.
-        for (int i = 0; i < BLOCK_TILE_SIZE; i++)
+        for (int i = 0; i < BLOCK_TILE; i++)
         {
             val += tile_A[tm][i] * tile_B[i][tn];
         }

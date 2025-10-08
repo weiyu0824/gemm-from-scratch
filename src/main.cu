@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include "kernels/1_gemm_naive.cuh"
 #include "kernels/2_gemm_global_coalesce.cuh"
+#include "kernels/3_gemm_block_tiling.cuh"
+#include "kernels/4_gemm_thread_tiling_1d.cuh"
+// #include "kernels/5_gemm_thread_tiling_2d.cuh"
 
 // Macro
 #define CEIL_DIV(numerator, denominator) (((numerator) + (denominator) - 1) / (denominator))
@@ -32,6 +35,33 @@ void launch_gemm_global_coalesce(const float *A, const float *B, float *C, int M
     gemm_global_coalesce_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
     cudaDeviceSynchronize();
 }
+
+void launch_gemm_block_tilling(const float *A, const float *B, float *C, int M, int K, int N)
+{
+    dim3 threadsPerBlock(32, 32);
+    dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
+
+    gemm_block_tiling_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+    cudaDeviceSynchronize();
+}
+
+void launch_gemm_thread_tiling_1d(const float *A, const float *B, float *C, int M, int K, int N)
+{
+    dim3 threadsPerBlock(32, 32);
+    dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
+
+    gemm_thread_tiling_1d_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+    cudaDeviceSynchronize();
+}
+
+// void launch_gemm_thread_tiling_2d(const float *A, const float *B, float *C, int M, int K, int N)
+// {
+//     dim3 threadsPerBlock(32, 32);
+//     dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
+
+//     gemm_thread_tiling_2d_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+//     cudaDeviceSynchronize();
+// }
 
 void print_benchmark_result(const char* kernel_name, size_t size, float time_ms, float gflops)
 {
@@ -108,6 +138,36 @@ int main(int argc, char **argv)
         cudaEventElapsedTime(&time_ms, start, stop);
         gflops = compute_gflops(M, N, K, time_ms);
         print_benchmark_result("GlobalCoalesceGEMM", s, time_ms, gflops);
+
+        // -- GEMM Block Tiling --
+        cudaEventRecord(start);
+        launch_gemm_block_tilling(A, B, C, M, N, K);
+        cudaEventRecord(stop);
+        cudaEventSynchronize(stop);
+
+        cudaEventElapsedTime(&time_ms, start, stop);
+        gflops = compute_gflops(M, N, K, time_ms);
+        print_benchmark_result("GlobalBlockTiling", s, time_ms, gflops);
+
+        // -- GEMM Thread Tiling 1d --
+        // cudaEventRecord(start);
+        // launch_gemm_thread_tiling_1d(A, B, C, M, N, K);
+        // cudaEventRecord(stop);
+        // cudaEventSynchronize(stop);
+
+        // cudaEventElapsedTime(&time_ms, start, stop);
+        // gflops = compute_gflops(M, N, K, time_ms);
+        // print_benchmark_result("GlobalThreadTiling1D", s, time_ms, gflops);
+
+        // // -- GEMM Thread Tiling 2d --
+        // cudaEventRecord(start);
+        // launch_gemm_thread_tiling_2d(A, B, C, M, N, K);
+        // cudaEventRecord(stop);
+        // cudaEventSynchronize(stop);
+
+        // cudaEventElapsedTime(&time_ms, start, stop);
+        // gflops = compute_gflops(M, N, K, time_ms);
+        // print_benchmark_result("GlobalThreadTiling2D", s, time_ms, gflops);
 
         // Free data
         cudaFree(A);
