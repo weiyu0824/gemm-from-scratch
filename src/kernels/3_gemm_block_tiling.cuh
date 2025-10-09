@@ -25,7 +25,7 @@ __global__ void gemm_block_tiling_kernel(const float *A, const float *B, float *
     size_t tn = threadIdx.x;
     size_t tm = threadIdx.y;
 
-    float result = {0.0};
+    // float result = {0.0};
 
     __shared__ float tile_A[BLOCK_TILE_SIZE][BLOCK_TILE_SIZE];
     __shared__ float tile_B[BLOCK_TILE_SIZE][BLOCK_TILE_SIZE];
