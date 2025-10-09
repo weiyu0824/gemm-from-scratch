@@ -37,11 +37,11 @@ void launch_gemm_global_coalesce(const float *A, const float *B, float *C, int M
 }
 
 void launch_gemm_block_tilling(const float *A, const float *B, float *C, int M, int K, int N)
-{
-    dim3 threadsPerBlock(32, 32);
-    dim3 blocksPerGrid(CEIL_DIV(N, 32), CEIL_DIV(M, 32));
-
-    gemm_block_tiling_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+{   
+    const int BS = 32; 
+    dim3 threadsPerBlock(BS, BS);
+    dim3 blocksPerGrid(CEIL_DIV(N, BS), CEIL_DIV(M, BS));
+    gemm_block_tiling_kernel<BS><<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
     cudaDeviceSynchronize();
 }
 

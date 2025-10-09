@@ -1,7 +1,5 @@
 #include <cuda_runtime.h>
 #include "../utils.h"
-#define BLOCK_TILE_SIZE 32
-
 
 // -------- Kernel Launch Assumption -------
 
@@ -14,6 +12,7 @@
 // Load all: 32 * K * 2bytes * 2(A&B) -> bounds by K.
 // Load tile: 32 * 32 * 2bytes * 2(A&B) = 4 kb
 
+template <const int BS>
 __global__ void gemm_block_tiling_kernel(const float *A, const float *B, float *C, int M, int K, int N)
 {
     size_t n = blockIdx.x * blockDim.x + threadIdx.x;
@@ -25,31 +24,31 @@ __global__ void gemm_block_tiling_kernel(const float *A, const float *B, float *
 
     // float result = {0.0};
 
-    __shared__ float tile_A[BLOCK_TILE_SIZE][BLOCK_TILE_SIZE];
-    __shared__ float tile_B[BLOCK_TILE_SIZE][BLOCK_TILE_SIZE];
+    __shared__ float tile_A[BS][BS];
+    __shared__ float tile_B[BS][BS];
 
     float val = 0;
-    for (int ti = 0; ti < CEIL_DIV(K, BLOCK_TILE_SIZE); ti++)
+    for (int ti = 0; ti < CEIL_DIV(K, BS); ti++)
     {
         tile_A[tm][tn] = 0;
         tile_B[tm][tn] = 0;
 
-        if (m < M && ti * BLOCK_TILE_SIZE + tn < K)
+        if (m < M && ti * BS + tn < K)
         {
-            tile_A[tm][tn] = A[INDEX_2D(m, (ti * BLOCK_TILE_SIZE + tn), K)];
+            tile_A[tm][tn] = A[INDEX_2D(m, (ti * BS + tn), K)];
             // printf("A %d, %d, %f\n", m, n, tile_A[tm][tn]);
         }
 
-        if (ti * BLOCK_TILE_SIZE + tm < K && n < N)
+        if (ti * BS + tm < K && n < N)
         {
-            tile_B[tm][tn] = B[INDEX_2D((ti * BLOCK_TILE_SIZE + tm), n, N)];
+            tile_B[tm][tn] = B[INDEX_2D((ti * BS + tm), n, N)];
             // printf("B %d, %d, %f\n", m, n, tile_B[tm][tn]);
         }
 
         __syncthreads();
 
         // inner product inside tile.
-        for (int i = 0; i < BLOCK_TILE_SIZE; i++)
+        for (int i = 0; i < BS; i++)
         {
             val += tile_A[tm][i] * tile_B[i][tn];
         }
