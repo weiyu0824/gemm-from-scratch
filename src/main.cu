@@ -7,9 +7,9 @@
 #include "kernels/3_gemm_block_tiling.cuh"
 #include "kernels/4_gemm_thread_tiling_1d.cuh"
 #include "kernels/5_gemm_thread_tiling_2d.cuh"
+#include "utils.h"
 
-// Macro
-#define CEIL_DIV(numerator, denominator) (((numerator) + (denominator) - 1) / (denominator))
+
 
 // Compute GFLOPS utility
 inline float compute_gflops(size_t M, size_t N, size_t K, float ms)

@@ -1,8 +1,6 @@
 #include <cuda_runtime.h>
-
+#include "../utils.h"
 #define BLOCK_TILE_SIZE 32
-#define INDEX_2D(row, col, width) (row * (width) + col) // row-major matrix
-#define CEIL_DIV(numerator, denominator) (((numerator) + (denominator) - 1) / (denominator))
 
 
 // -------- Kernel Launch Assumption -------

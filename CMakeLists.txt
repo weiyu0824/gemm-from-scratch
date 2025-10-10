@@ -9,6 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Include source and kernel directories
 include_directories(${PROJECT_SOURCE_DIR}/src/kernels)
+include_directories(${PROJECT_SOURCE_DIR}/src)
 
 add_executable(gemm_benchmark
     src/main.cu

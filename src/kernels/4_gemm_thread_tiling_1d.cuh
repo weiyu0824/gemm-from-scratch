@@ -1,7 +1,5 @@
 #include <cuda_runtime.h>
-#define CEIL_DIV(numerator, denominator) (((numerator) + (denominator) - 1) / (denominator))
-#define INDEX_2D(row, col, width) ((row) * (width) + col)
-
+#include "../utils.h"
 
 // Assumption: BM = BN, 
 //             BK = BM / TM (each threads only load 1 element from both A and B)
