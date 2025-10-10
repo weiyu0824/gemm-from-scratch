@@ -23,7 +23,7 @@ for size in "${SIZES[@]}"; do
     ncu --set full \
         --target-processes all \
         --export "${OUT_FILE}" \
-        "${BIN}" --mode profile --size "${size}"
+        "${BIN}" "${size}"
 done
 
 

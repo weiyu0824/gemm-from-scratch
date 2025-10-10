@@ -103,7 +103,7 @@ void warmup() {
 int main(int argc, char **argv)
 {
     std::vector<size_t> sizes;
-
+    
     if (argc > 1) {
         // size from command-line args
         for (int i = 1; i < argc; ++i) {
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
         }
     } else {
         // default sizes
-        sizes = {128, 256, 512, 1024, 2048, 4096};
+        sizes = {256, 512, 1024, 2048, 4096, 8192};
     }
 
     warmup();
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 
         cudaEventElapsedTime(&time_ms, start, stop);
         gflops = compute_gflops(M, N, K, time_ms);
-        print_benchmark_result("NaiveGEMM", s, time_ms, gflops);
+        print_benchmark_result("Naive", s, time_ms, gflops);
 
         // -- GEMM Global Coalesce --
         cudaEventRecord(start);
@@ -158,7 +158,7 @@ int main(int argc, char **argv)
 
         cudaEventElapsedTime(&time_ms, start, stop);
         gflops = compute_gflops(M, N, K, time_ms);
-        print_benchmark_result("GlobalCoalesceGEMM", s, time_ms, gflops);
+        print_benchmark_result("GlobalCoalesce", s, time_ms, gflops);
 
         // -- GEMM Block Tiling --
         cudaEventRecord(start);
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 
         cudaEventElapsedTime(&time_ms, start, stop);
         gflops = compute_gflops(M, N, K, time_ms);
-        print_benchmark_result("GlobalBlockTiling", s, time_ms, gflops);
+        print_benchmark_result("BlockTiling", s, time_ms, gflops);
 
         // -- GEMM Thread Tiling 1d --
         cudaEventRecord(start);
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 
         cudaEventElapsedTime(&time_ms, start, stop);
         gflops = compute_gflops(M, N, K, time_ms);
-        print_benchmark_result("GlobalThreadTiling1D", s, time_ms, gflops);
+        print_benchmark_result("ThreadTiling1D", s, time_ms, gflops);
 
         // // -- GEMM Thread Tiling 2d --
         cudaEventRecord(start);
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 
         cudaEventElapsedTime(&time_ms, start, stop);
         gflops = compute_gflops(M, N, K, time_ms);
-        print_benchmark_result("GlobalThreadTiling2D", s, time_ms, gflops);
+        print_benchmark_result("ThreadTiling2D", s, time_ms, gflops);
         printf("\n");
         // Free data
         cudaFree(A);
