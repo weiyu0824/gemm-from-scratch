@@ -52,10 +52,7 @@ void launch_gemm_thread_tiling_1d(const float* A, const float* B, float* C, int 
     // we want each thread to load 1 data from B and 1 from A. 
     // # threads. 
 
-    const int BM = 64;
-    const int BN = 64;
-    const int BK = 8;
-    const int TM = 8;
+    const int BM = 64, BN = 64, BK = 8, TM = 8;
 
     dim3 threadsPerBlock(BM * BN / TM); // (64 * 64 / 8) = 512
     dim3 blocksPerGrid(CEIL_DIV(N, BN), CEIL_DIV(M, BM));
@@ -70,11 +67,7 @@ void launch_gemm_thread_tiling_2d(const float* A, const float* B, float* C, int 
     // # threads. 
     // printf("dim: %d, %d\n", CEIL_DIV(N, BN), CEIL_DIV(M, BM));
 
-    const int BM = 128;
-    const int BN = 128;
-    const int BK = 8;
-    const int TM = 8;
-    const int TN = 8;
+    const int BM = 128, BN = 128, BK = 8, TM = 8, TN = 8;
 
     dim3 threadsPerBlock(BN/TN, BM/TM); // (64 * 64 / 8) = 512
     dim3 blocksPerGrid(CEIL_DIV(N, BN), CEIL_DIV(M, BM));
