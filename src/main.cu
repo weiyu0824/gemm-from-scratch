@@ -7,6 +7,7 @@
 #include "kernels/3_gemm_block_tiling.cuh"
 #include "kernels/4_gemm_thread_tiling_1d.cuh"
 #include "kernels/5_gemm_thread_tiling_2d.cuh"
+#include "kernels/5.1_gemm_thread_tiling_2d_memopt.cuh"
 #include "utils.h"
 
 
@@ -73,6 +74,22 @@ void launch_gemm_thread_tiling_2d(const float* A, const float* B, float* C, int 
     dim3 blocksPerGrid(CEIL_DIV(N, BN), CEIL_DIV(M, BM));
     
     gemm_thread_tiling_2d_kernel<BM, BN, BK, TM, TN><<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+    cudaDeviceSynchronize();
+}
+
+void launch_gemm_thread_tiling_2d_memopt(const float* A, const float* B, float* C, int M, int K, int N) {
+    // we set block_tile = A(BM * BK) & B(BK * BN)
+    // we set thread tile = TM * 1 
+    // we want each thread to load 1 data from B and 1 from A. 
+    // # threads. 
+    // printf("dim: %d, %d\n", CEIL_DIV(N, BN), CEIL_DIV(M, BM));
+
+    const int BM = 128, BN = 128, BK = 8, TM = 8, TN = 8;
+
+    dim3 threadsPerBlock(BN/TN, BM/TM); // (64 * 64 / 8) = 512
+    dim3 blocksPerGrid(CEIL_DIV(N, BN), CEIL_DIV(M, BM));
+    
+    gemm_thread_tiling_2d_kernel_memopt<BM, BN, BK, TM, TN><<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
     cudaDeviceSynchronize();
 }
 

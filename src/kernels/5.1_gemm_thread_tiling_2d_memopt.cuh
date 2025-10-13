@@ -17,7 +17,7 @@
 #include <stdio.h>
 
 template<const int  BM, const int  BN,const int  BK,const int  TM,const int  TN>
-__global__ void gemm_thread_tiling_2d_kernel(const float* A, const float* B, float* C, int M, int K, int N) {
+__global__ void gemm_thread_tiling_2d_kernel_memopt(const float* A, const float* B, float* C, int M, int K, int N) {
     int n_offset = blockIdx.x * BN;
     int m_offset = blockIdx.y * BM;
 
@@ -77,12 +77,20 @@ __global__ void gemm_thread_tiling_2d_kernel(const float* A, const float* B, flo
         // calculate inner product for multiple result.
         // each thread calculate TM results.
         for (int j = 0; j < BK; j += 1) {  // Note: TM=BK
-            for (int i = 0; i < TM; i += 1) {
-                atmp[i] = shared_A[j][out_row_offset + i];
+            
+            for (int i = 0; i < TM; i += 4) {
+              reinterpret_cast<float4 *>(&atmp[j])[0] =
+                reinterpret_cast<float4 *>(&shared_A[j][out_row_offset + i])[0];
+              reinterpret_cast<float4 *>(&btmp[j])[0] =
+                reinterpret_cast<float4 *>(&shared_B[j][out_col_offset + i])[0];
             }
-            for (int i = 0; i < TN; i += 1) {
-                btmp[i] = shared_B[j][out_col_offset + i];
-            }
+
+            // for (int i = 0; i < TM; i += 1) {
+            //     atmp[i] = shared_A[j][out_row_offset + i];
+            // }
+            // for (int i = 0; i < TN; i += 1) {
+            //     btmp[i] = shared_B[j][out_col_offset + i];
+            // }
             for (int r = 0; r < TM; r += 1) {
                 for (int c = 0; c < TN; c += 1) {
                     results[r][c] +=  atmp[r] * btmp[c];
