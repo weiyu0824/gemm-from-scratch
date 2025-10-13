@@ -17,7 +17,7 @@
 #include <stdio.h>
 
 template<const int  BM, const int  BN,const int  BK,const int  TM,const int  TN>
-__global__ void gemm_thread_tiling_2d_kernel_memopt(const float* A, const float* B, float* C, int M, int K, int N) {
+__global__ void gemm_global_coalesce_store(const float* A, const float* B, float* C, int M, int K, int N) {
     int n_offset = blockIdx.x * BN;
     int m_offset = blockIdx.y * BM;
 
@@ -38,6 +38,8 @@ __global__ void gemm_thread_tiling_2d_kernel_memopt(const float* A, const float*
     // Note
     __shared__ float shared_A[BK][BM];
     __shared__ float shared_B[BK][BN];
+
+    __shared__ float shared_C[BM][BN ]
 
     // register
     float atmp[TM] = {0.0};
@@ -106,17 +108,51 @@ __global__ void gemm_thread_tiling_2d_kernel_memopt(const float* A, const float*
     }
 
     // Each thread write TM * TN results
-    for (int r = 0; r < TM; r += 1) {
-        size_t c_row = m_offset + out_row_offset + r;
-        for (int c = 0; c < TN; c += 1) {
-            size_t c_col = n_offset + out_col_offset + c;
-            if (c_row < M && c_col < N) {
+    // for (int r = 0; r < TM; r += 1) {
+    //     size_t c_row = m_offset + out_row_offset + r;
+    //     for (int c = 0; c < TN; c += 1) {
+    //         size_t c_col = n_offset + out_col_offset + c;
+    //         if (c_row < M && c_col < N) {
                 
-                C[INDEX_2D(c_row, c_col, N)] = results[r][c];
-            }
+    //             C[INDEX_2D(c_row, c_col, N)] = results[r][c];
+    //         }
+    //     }
+    // }
+
+    for (int r = 0; r < TM; r += 1) {
+        size_t smem_row = out_row_offset + r;
+        for (int c = 0; c < TN; c += 1) {
+            size_t smem_col = out_col_offset + c;
+            
+            shared_C[smem_row][smem_col] = results[r][c];
         }
     }
+    __syncthreads(); 
+
+    // Coalesced Global Store
     
+    int elements_per_thread = (BM * BN) / num_threads;
+    int writes_per_thread = elements_per_thread; // 每個執行緒寫入的 float 數量 (TM*TN = 64)
+
+    for (int i = 0; i < writes_per_thread; i++) {
+        
+        int global_write_idx = tid * writes_per_thread + i;
+        
+        int smem_row = global_write_idx / BN;
+        int smem_col = global_write_idx % BN;
+        
+        size_t c_row = m_offset + smem_row;
+        size_t c_col = n_offset + smem_col;
+
+        
+        if (c_row < M && c_col < N) {
+            
+            float value_to_write = shared_C[smem_row][smem_col];
+
+            // Coalesced Store
+            C[INDEX_2D(c_row, c_col, N)] = value_to_write;
+        }
+    }
 }
 
 // A, B, C are device pointers (i.e. pointers to memory on the GPU)

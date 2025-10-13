@@ -8,6 +8,7 @@
 #include "kernels/4_gemm_thread_tiling_1d.cuh"
 #include "kernels/5_gemm_thread_tiling_2d.cuh"
 #include "kernels/5.1_gemm_thread_tiling_2d_memopt.cuh"
+#include "kernels/6_gemm_coalesce_store.cuh"
 #include "utils.h"
 
 
@@ -90,6 +91,21 @@ void launch_gemm_thread_tiling_2d_memopt(const float* A, const float* B, float* 
     dim3 blocksPerGrid(CEIL_DIV(N, BN), CEIL_DIV(M, BM));
     
     gemm_thread_tiling_2d_kernel_memopt<BM, BN, BK, TM, TN><<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
+    cudaDeviceSynchronize();
+}
+void launch_gemm_global_coalesce_store(const float* A, const float* B, float* C, int M, int K, int N) {
+    // we set block_tile = A(BM * BK) & B(BK * BN)
+    // we set thread tile = TM * 1 
+    // we want each thread to load 1 data from B and 1 from A. 
+    // # threads. 
+    // printf("dim: %d, %d\n", CEIL_DIV(N, BN), CEIL_DIV(M, BM));
+
+    const int BM = 128, BN = 128, BK = 8, TM = 8, TN = 8;
+
+    dim3 threadsPerBlock(BN/TN, BM/TM); // (64 * 64 / 8) = 512
+    dim3 blocksPerGrid(CEIL_DIV(N, BN), CEIL_DIV(M, BM));
+    
+    gemm_global_coalesce_store<BM, BN, BK, TM, TN><<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, K, N);
     cudaDeviceSynchronize();
 }
 
@@ -199,6 +215,27 @@ int main(int argc, char **argv)
         cudaEventElapsedTime(&time_ms, start, stop);
         gflops = compute_gflops(M, N, K, time_ms);
         print_benchmark_result("ThreadTiling2D", s, time_ms, gflops);
+
+         // // -- GEMM Thread Tiling 2d --
+        cudaEventRecord(start);
+        launch_gemm_thread_tiling_2d_memopt(A, B, C, M, N, K);
+        cudaEventRecord(stop);
+        cudaEventSynchronize(stop);
+
+        cudaEventElapsedTime(&time_ms, start, stop);
+        gflops = compute_gflops(M, N, K, time_ms);
+        print_benchmark_result("ThreadTiling2DMemopt", s, time_ms, gflops);
+
+        // // -- GEMM Thread Tiling 2d Global coalesce store --
+        cudaEventRecord(start);
+        launch_gemm_global_coalesce_store(A, B, C, M, N, K);
+        cudaEventRecord(stop);
+        cudaEventSynchronize(stop);
+
+        cudaEventElapsedTime(&time_ms, start, stop);
+        gflops = compute_gflops(M, N, K, time_ms);
+        print_benchmark_result("ThreadTiling2DGlobalCalesceStore", s, time_ms, gflops);
+
         printf("\n");
         // Free data
         cudaFree(A);
